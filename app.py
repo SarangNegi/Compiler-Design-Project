@@ -27,7 +27,9 @@ class Lexer:
             ('RPAREN',  r'\)'),
             ('LBRACE',  r'\{'),
             ('RBRACE',  r'\}'),
-            ('DELIM',   r';'),
+            ('LBRACKET',r'\['),       
+            ('RBRACKET',r'\]'),         
+            ('DELIM',   r'[;,]'),
             ('SKIP',    r'[ \t\n]+'),
             ('MISMATCH', r'.'),
         ]
@@ -114,7 +116,15 @@ class Parser:
             self.pos += 1
             return
 
-        self.ast.append(('declare', type_tok.value, id_tok.value))
+        # Check for array declaration
+        if self.match('LBRACKET'):
+            size_tok = self.match('NUM')
+            if not size_tok or not self.match('RBRACKET'):
+                self.errors.append("Syntax Error: Invalid array declaration")
+                return
+            self.ast.append(('declare_array', type_tok.value, id_tok.value, size_tok.value))
+        else:
+            self.ast.append(('declare', type_tok.value, id_tok.value))
 
         if self.match('OP', '='):
             expr = self.expression()
@@ -136,7 +146,7 @@ class Parser:
             self.errors.append("Syntax Error: Expected string in printf")
             return
         if not self.match('RPAREN'):
-            self.errors.append("Syntax Error: Expected ')'")
+            self.errors.append("Syntax Error: Expected ')' in printf")
             return
         if not self.match('DELIM'):
             self.errors.append("Syntax Error: Missing semicolon after printf")
@@ -190,8 +200,8 @@ class SemanticAnalyzer:
 
     def analyze(self):
         for stmt in self.ast:
-            if stmt[0] == 'declare':
-                _, _, name = stmt
+            if stmt[0] in {'declare', 'declare_array'}:
+                _, _, name = stmt[:3]
                 if name in self.symbols:
                     self.errors.append(f"Semantic Error: '{name}' redeclared")
                 else:
@@ -221,6 +231,9 @@ class ICG:
             elif stmt[0] == 'declare':
                 _, typ, name = stmt
                 self.code.append(f"{typ} {name}")
+            elif stmt[0] == 'declare_array':
+                _, typ, name, size = stmt
+                self.code.append(f"{typ} {name}[{size}]")
             elif stmt[0] == 'assign_expr':
                 _, _, name, expr = stmt
                 result = self.handle_expr(expr)
@@ -276,3 +289,4 @@ def analyze():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
