@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Compiler Frontend</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f3f4f6;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            font-family: monospace;
+            font-size: 14px;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            resize: vertical;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #0056d2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        h2 {
+            margin-top: 20px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        .output {
+            background: #f9fafb;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Mini Compiler Frontend</h1>
+        <textarea id="codeInput" placeholder="Enter C/C++/Python code here..."></textarea>
+        <button onclick="analyzeCode()">Analyze</button>
+
+        <h2>Tokens</h2>
+        <div id="tokens" class="output"></div>
+
+        <h2>Syntax Errors</h2>
+        <div id="syntaxErrors" class="output"></div>
+
+        <h2>Semantic Errors</h2>
+        <div id="semanticErrors" class="output"></div>
+
+        <h2>Intermediate Code</h2>
+        <div id="intermediateCode" class="output"></div>
+    </div>
+
+    <script>
+        function analyzeCode() {
+            const code = document.getElementById('codeInput').value;
+
+            fetch('/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: code })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert("An error occurred: " + data.error);
+                    return;
+                }
+
+                const tokens = data.tokens || [];
+                const syntaxErrors = data.syntaxErrors || [];
+                const semanticErrors = data.semanticErrors || [];
+                const intermediateCode = data.intermediateCode || [];
+
+                document.getElementById('tokens').innerHTML =
+                    tokens.map(t => `${t.type}: ${t.value}`).join('<br>') || 'None';
+
+                document.getElementById('syntaxErrors').innerHTML =
+                    syntaxErrors.length ? syntaxErrors.join('<br>') : 'None';
+
+                document.getElementById('semanticErrors').innerHTML =
+                    semanticErrors.length ? semanticErrors.join('<br>') : 'None';
+
+                document.getElementById('intermediateCode').innerHTML =
+                    intermediateCode.length ? intermediateCode.join('<br>') : 'None';
+            })
+            .catch(err => {
+                alert("Failed to analyze: " + err.message);
+            });
+        }
+    </script>
+</body>
+</html>
